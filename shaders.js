@@ -628,7 +628,7 @@ verticalLine.fragText = `
         // a = 1.0-d*10.;
         // float thickness = 0.0001;
         // a = mix(0.0, 1.0, smoothstep((thickness + 2.0) * w, thickness * w, d));
-        gl_FragColor = vec4(c.rgb, min(c.a, 1.0) * (a - noise));
+        gl_FragColor = vec4(c.rgb, min(c.a, 1.0) * (a - noise) * 0.25);
         // gl_FragColor.a *= 1.5;
     }
     // endGLSL
@@ -682,5 +682,224 @@ void main() {
 textureShader.vertText = textureShader.vertText.replace(/[^\x00-\x7F]/g, "");
 textureShader.fragText = textureShader.fragText.replace(/[^\x00-\x7F]/g, "");
 textureShader.init();
+
+// Cramoisi
+textureShader.vertText = `
+    // beginGLSL
+attribute vec3 a_position;
+attribute vec2 a_texcoord;
+varying vec2 v_texcoord;
+void main() {
+  // Multiply the position by the matrix.
+  vec4 positionVec4 = vec4(a_position, 1.0);
+  // gl_Position = a_position;
+  positionVec4.xy = positionVec4.xy * 2.0 - 1.0;
+  gl_Position = positionVec4;
+  // Pass the texcoord to the fragment shader.
+  v_texcoord = a_texcoord;
+}
+// endGLSL
+`;
+textureShader.fragText = `
+// beginGLSL
+precision mediump float;
+// Passed in from the vertex shader.
+uniform float time;
+varying vec2 v_texcoord;
+// The texture.
+uniform sampler2D u_texture;
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453 * (2.0 + sin(time)));
+}
+${blendingMath}
+void main() {
+   gl_FragColor = texture2D(u_texture, v_texcoord);
+   gl_FragColor.rgb = max(gl_FragColor.rrr, gl_FragColor.bbb);
+        vec3 blender = BlendSoftLight(gl_FragColor.rgb, vec3(1.0, 0.5, 0.0));
+    // vec3 blend = mix(gl_FragColor.rgb, blender, 0.5);
+    gl_FragColor.rgb = blender * vec3(1., 0.3, 0.3);
+}
+// endGLSL
+`;
+textureShader.vertText = textureShader.vertText.replace(/[^\x00-\x7F]/g, "");
+textureShader.fragText = textureShader.fragText.replace(/[^\x00-\x7F]/g, "");
+textureShader.init();
+
+// ----------------------------------------------------
+// Twin Peaks Zebra Pattern
+// ----------------------------------------------------
+verticalLine.vertText = `
+    // beginGLSL
+    #define pi 3.1415926535897932384626433832795
+    attribute float index;
+    attribute float x;
+    attribute vec4 color;
+    attribute float width;
+    attribute vec2 uv;
+    uniform vec2 resolution;
+    uniform float time;
+    varying float w;
+    varying vec4 c;
+    varying vec2 uvs;
+    varying float t;
+    void main(void) {
+        float ratio = (resolution.y / resolution.x);
+        vec2 pos = vec2(x, 0.);
+        w = width * 0.5;
+        if (index == 0.) {
+            pos.x -= w;            
+            pos.y = 1.0;
+        } else if (index == 1.) {
+            pos.x += w;           
+            pos.y = 1.0;
+        } else if (index == 2.) {
+            pos.x += w;
+            pos.y = -1.0;
+        } else if (index == 3.) {
+            pos.x -= w;
+            pos.y = -1.0;
+        }
+        float w1 = 1./w;
+        pos.x += sin(time * 20.*w) * 8e-2 * w;
+        pos.x *= ratio;
+        gl_Position = vec4(pos, 0.0, 1.0);
+        c = color;
+        uvs = uv;
+        t = time;
+    }
+    // endGLSL
+`;
+verticalLine.fragText = `
+    // beginGLSL
+    precision mediump float;
+    varying vec4 c;
+    varying vec2 uvs;
+    varying float w;
+    varying float t;
+    float rand(vec2 co){
+        return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453 * (2.0 + sin(co.x)));
+    }
+    float map(float value, float min1, float max1, float min2, float max2) {
+        return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+    }
+    void main(void) {
+        vec2 fc = gl_FragCoord.xy;
+        vec2 pos = gl_PointCoord;
+        float noise = rand(pos) * 0.125;
+        float a = abs((uvs.x - 0.5) * 2.0)  * -1. + 1.;
+        float wave = abs(fract((uvs.y-0.5)*20.*sin(t*4e-2)) - 0.5) * 0.5 + 1.;
+        wave = 1.0 - abs(wave - 0.1);
+        a = abs((uvs.x+wave - 0.5) * 2.0)  * -1. + 1.;
+        a = max(smoothstep(0., 1., a) * 0.5, pow(a, 8.0));
+        gl_FragColor = vec4(c.rgb, min(c.a, 1.0) * (a - noise));
+    }
+    // endGLSL
+`;
+verticalLine.vertText = verticalLine.vertText.replace(/[^\x00-\x7F]/g, "");
+verticalLine.fragText = verticalLine.fragText.replace(/[^\x00-\x7F]/g, "");
+verticalLine.init();
+if (shadersReadyToInitiate) {
+    currentProgram = getProgram("vertical-line");
+    gl.useProgram(currentProgram);
+}
+
+// -------------------------------------------------
+// Twin Peaks Zebra, Oblique
+// -------------------------------------------------
+verticalLine.vertText = `
+    // beginGLSL
+    #define pi 3.1415926535897932384626433832795
+    attribute float index;
+    attribute float x;
+    attribute vec4 color;
+    attribute float width;
+    attribute vec2 uv;
+    uniform vec2 resolution;
+    uniform float time;
+    varying float w;
+    varying vec4 c;
+    varying vec2 uvs;
+    varying float t;
+    void main(void) {
+        float ratio = (resolution.y / resolution.x);
+        vec2 pos = vec2(x, 0.);
+        w = width * 0.5;
+        if (index == 0.) {
+            pos.x -= w;            
+            if (color.b == 1.0){
+            pos.x += 16./9. * 0.5;
+            } else {
+                pos.x -= 16./9. * 0.5;
+            }
+            pos.y = 1.0;
+        } else if (index == 1.) {
+            pos.x += w;           
+            if (color.b == 1.0){
+            pos.x += 16./9. * 0.5;
+            } else {
+                pos.x -= 16./9. * 0.5;
+            }
+            pos.y = 1.0;
+        } else if (index == 2.) {
+            pos.x += w;
+            if (color.b == 1.0){
+            pos.x -= 16./9. * 0.5;
+            } else {
+                pos.x += 16./9. * 0.5;
+            }
+            pos.y = -1.0;
+        } else if (index == 3.) {
+            pos.x -= w;
+            if (color.b == 1.0){
+            pos.x -= 16./9. * 0.5;
+            } else {
+                pos.x += 16./9. * 0.5;
+            }
+            pos.y = -1.0;
+        }
+        float w1 = 1./w;
+        pos.x += sin(time * 20.*w) * 8e-2 * w;
+        pos.x *= ratio;
+        gl_Position = vec4(pos, 0.0, 1.0);
+        c = color;
+        uvs = uv;
+        t = time;
+    }
+    // endGLSL
+`;
+verticalLine.fragText = `
+    // beginGLSL
+    precision mediump float;
+    varying vec4 c;
+    varying vec2 uvs;
+    varying float w;
+    varying float t;
+    float rand(vec2 co){
+        return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453 * (2.0 + sin(co.x)));
+    }
+    float map(float value, float min1, float max1, float min2, float max2) {
+        return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+    }
+    void main(void) {
+        vec2 fc = gl_FragCoord.xy;
+        vec2 pos = gl_PointCoord;
+        float noise = rand(pos) * 0.125;
+        float a = abs((uvs.x - 0.5) * 2.0)  * -1. + 1.;
+        float wave = abs(fract((uvs.y-0.5)*20.*sin(t*4e-2)) - 0.5) * 0.5 + 1.;
+        wave = 1.0 - abs(wave - 0.1);
+        a = abs((uvs.x+wave - 0.5) * 2.0)  * -1. + 1.;
+        a = max(smoothstep(0., 1., a) * 0.5, pow(a, 8.0));
+        gl_FragColor = vec4(c.rgb, min(c.a, 1.0) * (a - noise));
+        // gl_FragColor.a *= 1.5;
+    }
+    // endGLSL
+`;
+verticalLine.vertText = verticalLine.vertText.replace(/[^\x00-\x7F]/g, "");
+verticalLine.fragText = verticalLine.fragText.replace(/[^\x00-\x7F]/g, "");
+verticalLine.init();
+if (shadersReadyToInitiate) {
+    currentProgram = getProgram("vertical-line");
+    gl.useProgram(currentProgram);
+}
 
 }
