@@ -485,7 +485,9 @@ void main() {
     float wave = abs(fract((uv.y-0.5)*3.) - 0.5) * 3.;
     float a = fract(uv.x*20.+wave);
     a = abs((a - 0.5) * 2.0)  * -1. + 1.;
+    // a = smoothstep(0., 1., a) * 0.2 + a * 0.9;
     // distSquared = smoothstep(0.2, 0.5, distSquared);
+    float blue = a;
     a *= distSquared;
     // float l = 1.0 - length(pos - vec2(0.5)) * 0.5;
     // l = smoothstep(0.5, 0.8, l);
@@ -494,7 +496,9 @@ void main() {
         // a = abs((uv.x+wave - 0.5) * 2.0)  * -1. + 1.;
         // a = max(smoothstep(0., 1., a) * 0.5, pow(a, 8.0));
     // uv.x = sin(uv.x*200.);
-   gl_FragColor = vec4(vec3(1., 0., 0.), a - noise);
+   vec4 tex = texture2D(u_texture, v_texcoord);
+   gl_FragColor = vec4(vec3(1., pow(blue,5.)*0.25, pow(blue,5.)*0.5), a - noise);
+    // gl_FragColor = mix(tex, gl_FragColor, sin(length(vec2(0.))*10.-time*10.));
 }
 // endGLSL
 `;
