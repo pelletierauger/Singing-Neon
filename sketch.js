@@ -226,7 +226,7 @@ draw = function() {
     if (wave == amountOfLines) {wave = 0;}
     amps[wave] += amplitude * 16;
     glitchDist = (amplitude+amplitude2) * 2;
-    glitchDist = Math.pow(amplitude + amplitude2, 3) * 1600;
+    glitchDist = Math.pow(amplitude + amplitude2, 3) * 1600 * 0;
     amps2[wave] += amplitude2 * 16;
     for (let x = 0; x < amountOfLines; x++) {
         let xx = map(x, 0, amountOfLines, -16/9, 16/9) + (16/9/amountOfLines);
