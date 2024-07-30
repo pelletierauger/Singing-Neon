@@ -443,6 +443,65 @@ textureShader.init();
 
 if (false) {
 
+// Twin Peaks carpet, morphed
+textureShader.vertText = `
+    // beginGLSL
+attribute vec3 a_position;
+attribute vec2 a_texcoord;
+varying vec2 v_texcoord;
+void main() {
+  // Multiply the position by the matrix.
+  vec4 positionVec4 = vec4(a_position, 1.0);
+  // gl_Position = a_position;
+  positionVec4.xy = positionVec4.xy * 2.0 - 1.0;
+  gl_Position = positionVec4;
+  // Pass the texcoord to the fragment shader.
+  v_texcoord = a_texcoord;
+}
+// endGLSL
+`;
+textureShader.fragText = `
+// beginGLSL
+precision mediump float;
+// Passed in from the vertex shader.
+uniform float time;
+varying vec2 v_texcoord;
+// The texture.
+uniform sampler2D u_texture;
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453 * (2.0 + sin(time)));
+}
+${blendingMath}
+void main() {
+    vec2 uv = gl_FragCoord.xy / vec2(2560., 1440.) * 2.;
+    vec2 uv2 = gl_FragCoord.xy / vec2(2560., 1440.) * 2.;
+    uv += vec2(cos(-time)*0., time);
+    uv.y *= -1.;
+    vec2 pos = uv2;
+    float distSquared = 1.0 - dot(pos - 0.5, pos - 0.5) * 3.5;
+    // uv *= cos(uv.x * 1e-1);
+    uv += vec2(smoothstep(0.2, 1.0, cos(distSquared*1e-2)*40.), smoothstep(0.2, 1.0, sin(distSquared*1e-2)*40.))*3.;
+    float noise = rand(uv) * 0.05;
+    float wave = abs(fract((uv.y-0.5)*3.) - 0.5) * 3.;
+    float a = fract(uv.x*20.+wave);
+    a = abs((a - 0.5) * 2.0)  * -1. + 1.;
+    // distSquared = smoothstep(0.2, 0.5, distSquared);
+    a *= distSquared;
+    // float l = 1.0 - length(pos - vec2(0.5)) * 0.5;
+    // l = smoothstep(0.5, 0.8, l);
+    // a *= l;
+        // wave = 1.0 - abs(wave - 0.1);
+        // a = abs((uv.x+wave - 0.5) * 2.0)  * -1. + 1.;
+        // a = max(smoothstep(0., 1., a) * 0.5, pow(a, 8.0));
+    // uv.x = sin(uv.x*200.);
+   gl_FragColor = vec4(vec3(1., 0., 0.), a - noise);
+}
+// endGLSL
+`;
+textureShader.vertText = textureShader.vertText.replace(/[^\x00-\x7F]/g, "");
+textureShader.fragText = textureShader.fragText.replace(/[^\x00-\x7F]/g, "");
+textureShader.init();
+
 // -------------------------------------------------
 // Vertical, wavy
 // -------------------------------------------------
