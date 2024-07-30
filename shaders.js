@@ -506,6 +506,68 @@ textureShader.vertText = textureShader.vertText.replace(/[^\x00-\x7F]/g, "");
 textureShader.fragText = textureShader.fragText.replace(/[^\x00-\x7F]/g, "");
 textureShader.init();
 
+// Twin Peaks carpet, better
+textureShader.vertText = `
+    // beginGLSL
+attribute vec3 a_position;
+attribute vec2 a_texcoord;
+varying vec2 v_texcoord;
+void main() {
+  // Multiply the position by the matrix.
+  vec4 positionVec4 = vec4(a_position, 1.0);
+  // gl_Position = a_position;
+  positionVec4.xy = positionVec4.xy * 2.0 - 1.0;
+  gl_Position = positionVec4;
+  // Pass the texcoord to the fragment shader.
+  v_texcoord = a_texcoord;
+}
+// endGLSL
+`;
+textureShader.fragText = `
+// beginGLSL
+precision mediump float;
+#define pi 3.1415926535897932384626433832795
+// Passed in from the vertex shader.
+uniform float time;
+varying vec2 v_texcoord;
+// The texture.
+uniform sampler2D u_texture;
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453 * (2.0 + sin(time)));
+}
+float map(float value, float min1, float max1, float min2, float max2) {
+    return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+}
+${blendingMath}
+void main() {
+    vec2 uv = gl_FragCoord.xy / vec2(2560., 1440.) * 2.;
+    vec2 ov = gl_FragCoord.xy / vec2(2560., 1440.) * 2.;
+    vec2 uv2 = gl_FragCoord.xy / vec2(2560., 1440.) * 2.;
+    uv.y *= -2.;
+    float mappy = map(ov.y, 1., 0., 3., 1.);
+    uv.x = (uv.x-0.5) * mappy;
+    uv.y *= uv.y * 0.5;
+    uv.y += time;
+    vec2 pos = uv2;
+    float distSquared = 1.0 - dot(pos - 0.5, pos - 0.5) * 5.5;
+    float noise = rand(uv) * 0.05;
+    float wave = abs(fract((uv.y-0.5)*3.) - 0.5) * 3.;
+    float a = fract(uv.x*10.+wave);
+    a = abs((a - 0.5) * 2.0* (1.0 - distSquared * 0.7))  * -1. + 1.;
+    a = max(smoothstep(0., 1., a) * 0.75, pow(a, 8.0)*1.1);
+    float blue = a;
+    a *= distSquared;
+    vec4 tex = texture2D(u_texture, v_texcoord);
+    gl_FragColor = vec4(vec3(1., pow(blue,5.)*0.25, pow(blue,5.)*0.5), a - noise);
+    // gl_FragColor = vec4(0.0, 0.0, ov.y, 1.0);
+    // gl_FragColor = mix(tex, gl_FragColor, sin(length(vec2(0.))*10.-time*10.));
+}
+// endGLSL
+`;
+textureShader.vertText = textureShader.vertText.replace(/[^\x00-\x7F]/g, "");
+textureShader.fragText = textureShader.fragText.replace(/[^\x00-\x7F]/g, "");
+textureShader.init();
+
 // -------------------------------------------------
 // Vertical, wavy
 // -------------------------------------------------
